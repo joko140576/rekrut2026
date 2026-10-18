@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Data Pelamar</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#1d2330;--mut:#6b7385;--bd:#e3e6ec;--ac:#2557d6;--hd:#eef1f7;--hv:#f3f6ff}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1a1e28;--tx:#e6e9f0;--mut:#8b93a7;--bd:#2a3040;--ac:#6f95ff;--hd:#222838;--hv:#202740}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;height:100vh;display:flex;flex-direction:column}
+header{padding:14px 16px 10px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+h1{font-size:18px;margin:0 8px 0 0}
+input,select,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+input[type=search]{flex:1;min-width:200px;max-width:380px}
+button{cursor:pointer}button:hover{border-color:var(--ac)}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.stat{color:var(--mut);margin-left:auto;font-size:13px}
+#wrap{flex:1;margin:0 16px 16px;background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:auto;position:relative}
+table{border-collapse:separate;border-spacing:0;table-layout:fixed}
+thead th{position:sticky;top:0;z-index:2;background:var(--hd);text-align:left;padding:0 10px;height:40px;border-bottom:1px solid var(--bd);cursor:pointer;user-select:none;white-space:nowrap;font-weight:600}
+thead th:hover{color:var(--ac)}
+thead th .ar{font-size:10px;margin-left:4px;color:var(--ac)}
+td{height:40px;padding:0 10px;border-bottom:1px solid var(--bd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+tr.r{cursor:pointer}tr.r:hover td{background:var(--hv)}
+td.no,th.no{position:sticky;left:0;background:inherit;z-index:1;color:var(--mut)}
+tbody td.no{background:var(--card)}tr.r:hover td.no{background:var(--hv)}
+thead th.no{z-index:3}
+#msg{position:absolute;inset:40px 0 0 0;display:flex;align-items:center;justify-content:center;color:var(--mut);text-align:center;padding:20px;pointer-events:none}
+#msg.err{color:#d33}
+dialog{border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);max-width:640px;width:92vw;padding:0}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--card)}
+.dh b{font-size:16px}
+.db{padding:6px 18px 18px;max-height:70vh;overflow:auto}
+.f{padding:9px 0;border-bottom:1px solid var(--bd)}
+.f small{display:block;color:var(--mut);font-size:12px;margin-bottom:2px}
+.f div{white-space:pre-wrap;word-break:break-word}
+</style>
+</head>
+<body>
+<header>
+  <h1>Data Pelamar</h1>
+  <input type="search" id="q" placeholder="Cari nama, domisili, telepon, jurusan, dll…">
+  <select id="fPend"><option value="">Semua pendidikan</option></select>
+  <select id="fPlace"><option value="">Semua penempatan</option></select>
+  <select id="fKerja"><option value="">Pernah kerja: semua</option></select>
+  <button id="reload">⟳ Muat ulang</button>
+  <button id="csv" class="pri">Unduh CSV</button>
+  <span class="stat" id="stat">Memuat…</span>
+</header>
+<div id="wrap">
+  <table id="tb"><colgroup id="cg"></colgroup><thead><tr id="hr"></tr></thead><tbody id="body"></tbody></table>
+  <div id="msg">Memuat data…</div>
+</div>
+<dialog id="dlg"><div class="dh"><b id="dt"></b><button id="dx">Tutup</button></div><div class="db" id="dbody"></div></dialog>
+
+<script>
+/* ===== KONFIGURASI ===== */
+const CONFIG = {
+  URL:   'https://script.google.com/macros/s/AKfycbzzomC-yitGC4a-n9_CnAcQoCeypjkuKDYezuiWvk3-lpTswzs0bmdmBKmbLKzOk_H6KA/exec', // URL Web App
+  TOKEN: 'rekrut12345'                                // sama dengan di Apps Script
+};
+
+const COLS = [
+  ['ts','Waktu',150],['nama','Nama',180],['domisili','Domisili',150],['telepon','Telepon',130],
+  ['ttl','TTL',150],['usia','Usia',70],['pendidikan','Pendidikan',110],['jurusan','Jurusan',150],
+  ['pernah_kerja','Pernah Kerja',110],['pengalaman','Pengalaman',160],['jabatan','Jabatan',140],
+  ['motivasi','Motivasi',220],['alasan_internal_audit','Alasan Internal Audit',220],
+  ['komputer','Komputer',100],['office','Office',100],['elektronika','Elektronika',100],
+  ['mekanik','Mekanik',100],['elektrik','Elektrik',100],['administrasi','Administrasi',110],
+  ['akuntansi','Akuntansi',100],['keahlian_lain','Keahlian Lain',160],['penempatan','Penempatan',150],
+  ['aturan','Aturan',110],['shift','Shift',100],['libur','Libur',100]
+];
+const IDX = Object.fromEntries(COLS.map((c,i)=>[c[0],i]));
+const ROW_H = 40, OVER = 8, NO_W = 56;
+const CACHE_KEY = 'pelamar_cache_v1';
+
+const $ = id => document.getElementById(id);
+const wrap=$('wrap'), body=$('body'), msg=$('msg');
+let DATA=[], SEARCH=[], VIEW=[], sortCol=0, sortDir=-1; // default: terbaru di atas
+const coll = new Intl.Collator('id',{numeric:true,sensitivity:'base'});
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---- header & colgroup ---- */
+$('cg').innerHTML = `<col style="width:${NO_W}px">` + COLS.map(c=>`<col style="width:${c[2]}px">`).join('');
+$('tb').style.width = (NO_W + COLS.reduce((a,c)=>a+c[2],0)) + 'px';
+$('hr').innerHTML = `<th class="no">#</th>` + COLS.map((c,i)=>`<th data-i="${i}">${c[1]}<span class="ar"></span></th>`).join('');
+$('hr').addEventListener('click',e=>{
+  const th=e.target.closest('th[data-i]'); if(!th) return;
+  const i=+th.dataset.i; sortDir = (sortCol===i) ? -sortDir : 1; sortCol=i; applyView(true);
+});
+
+/* ---- ambil data lewat JSONP (tanpa CORS) ---- */
+function fetchJSONP(){
+  return new Promise((res,rej)=>{
+    const name='__cb'+Date.now();
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{cleanup();rej(new Error('Timeout. Cek URL Web App & akses "Anyone".'))},60000);
+    function cleanup(){clearTimeout(t);delete window[name];s.remove()}
+    window[name]=d=>{cleanup();d&&d.ok?res(d):rej(new Error((d&&d.error)||'Respon tidak valid'))};
+    s.onerror=()=>{cleanup();rej(new Error('Gagal memuat. Pastikan Web App di-deploy sebagai "Anyone".'))};
+    s.src=CONFIG.URL+'?token='+encodeURIComponent(CONFIG.TOKEN)+'&callback='+name+'&_='+Date.now();
+    document.head.appendChild(s);
+  });
+}
+
+function setData(rows){
+  DATA=rows;
+  SEARCH=rows.map(r=>r.join('\u0001').toLowerCase());
+  fillSelect('fPend','pendidikan');fillSelect('fPlace','penempatan');fillSelect('fKerja','pernah_kerja');
+  applyView(true);
+}
+function fillSelect(id,key){
+  const el=$(id), cur=el.value, i=IDX[key];
+  const set=[...new Set(DATA.map(r=>r[i]).filter(Boolean))].sort(coll.compare);
+  el.options[0] && (el.length=1);
+  set.forEach(v=>el.add(new Option(v,v)));
+  el.value=set.includes(cur)?cur:'';
+}
+
+async function load(force){
+  // 1) tampilkan cache dulu supaya instan
+  if(!force){
+    try{const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+      if(c&&c.rows){setData(c.rows);$('stat').textContent='Cache · memperbarui…'}}catch(_){}
+  }
+  msg.className='';if(!DATA.length){msg.textContent='Memuat data…';msg.style.display='flex'}
+  try{
+    const d=await fetchJSONP();
+    setData(d.rows);
+    try{localStorage.setItem(CACHE_KEY,JSON.stringify({rows:d.rows,t:Date.now()}))}catch(_){}
+  }catch(err){
+    if(!DATA.length){msg.className='err';msg.textContent=err.message;msg.style.display='flex'}
+    else $('stat').textContent='Gagal memperbarui: '+err.message;
+  }
+}
+
+/* ---- filter + sort ---- */
+let qTimer;
+$('q').addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(()=>applyView(true),150)});
+['fPend','fPlace','fKerja'].forEach(id=>$(id).addEventListener('change',()=>applyView(true)));
+
+function applyView(resetScroll){
+  const q=$('q').value.trim().toLowerCase(), terms=q?q.split(/\s+/):[];
+  const fp=$('fPend').value, fl=$('fPlace').value, fk=$('fKerja').value;
+  const ip=IDX.pendidikan, il=IDX.penempatan, ik=IDX.pernah_kerja;
+  const out=[];
+  for(let n=0;n<DATA.length;n++){
+    const r=DATA[n];
+    if(fp&&r[ip]!==fp)continue; if(fl&&r[il]!==fl)continue; if(fk&&r[ik]!==fk)continue;
+    if(terms.length){const h=SEARCH[n];let ok=true;for(const t of terms){if(h.indexOf(t)<0){ok=false;break}}if(!ok)continue}
+    out.push(n);
+  }
+  const c=sortCol, d=sortDir;
+  out.sort((a,b)=>d*coll.compare(DATA[a][c],DATA[b][c]));
+  VIEW=out;
+  document.querySelectorAll('#hr th[data-i]').forEach(th=>{
+    th.querySelector('.ar').textContent = (+th.dataset.i===sortCol)?(sortDir>0?'▲':'▼'):'';
+  });
+  $('stat').textContent=`${VIEW.length.toLocaleString('id')} dari ${DATA.length.toLocaleString('id')} pelamar`;
+  if(DATA.length){msg.style.display=VIEW.length?'none':'flex';if(!VIEW.length){msg.className='';msg.textContent='Tidak ada data yang cocok.'}}
+  if(resetScroll)wrap.scrollTop=0;
+  render();
+}
+
+/* ---- virtual scrolling ---- */
+let raf=0;
+wrap.addEventListener('scroll',()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;render()})});
+window.addEventListener('resize',render);
+function render(){
+  const total=VIEW.length, vh=wrap.clientHeight;
+  const start=Math.max(0,Math.floor(wrap.scrollTop/ROW_H)-OVER);
+  const end=Math.min(total,start+Math.ceil(vh/ROW_H)+OVER*2);
+  let h=start?`<tr style="height:${start*ROW_H}px"><td colspan="${COLS.length+1}" style="border:0;padding:0"></td></tr>`:'';
+  for(let k=start;k<end;k++){
+    const n=VIEW[k], r=DATA[n];
+    h+=`<tr class="r" data-n="${n}"><td class="no">${k+1}</td>`;
+    for(let i=0;i<COLS.length;i++){const v=r[i];h+=`<td title="${esc(v)}">${esc(v)}</td>`}
+    h+='</tr>';
+  }
+  const rest=total-end;
+  if(rest>0)h+=`<tr style="height:${rest*ROW_H}px"><td colspan="${COLS.length+1}" style="border:0;padding:0"></td></tr>`;
+  body.innerHTML=h;
+}
+
+/* ---- detail ---- */
+body.addEventListener('click',e=>{
+  const tr=e.target.closest('tr.r'); if(!tr)return;
+  const r=DATA[+tr.dataset.n];
+  $('dt').textContent=r[IDX.nama]||'Detail';
+  $('dbody').innerHTML=COLS.map((c,i)=>`<div class="f"><small>${c[1]}</small><div>${esc(r[i])||'-'}</div></div>`).join('');
+  $('dlg').showModal();
+});
+$('dx').onclick=()=>$('dlg').close();
+$('dlg').addEventListener('click',e=>{if(e.target===$('dlg'))$('dlg').close()});
+
+/* ---- CSV (sesuai filter & urutan saat ini) ---- */
+$('csv').onclick=()=>{
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const lines=[COLS.map(c=>q(c[1])).join(',')];
+  VIEW.forEach(n=>lines.push(DATA[n].map(q).join(',')));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  a.download='data-pelamar.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+};
+$('reload').onclick=()=>load(true);
+
+load(false);
+</script>
+</body>
+</html>
