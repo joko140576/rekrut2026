@@ -1,0 +1,391 @@
+/**
+ * ============================================================
+ *  BACKEND UJIAN REKRUTMEN  —  Google Apps Script (Web App)
+ * ============================================================
+ *  - Mengambil soal dari 5 sheet (kunci jawaban TIDAK dikirim ke peserta)
+ *  - Mengirim gambar soal buta warna (gambar di dalam sel) sebagai base64
+ *  - Menerima jawaban, menilai di server, lalu menyimpan ke sheet "nilai"
+ *  - Aman dari masalah CORS:
+ *      GET  -> JSON biasa (ContentService) + dukungan JSONP (?callback=fn)
+ *      POST -> dikirim dari web dengan Content-Type: text/plain (tanpa preflight)
+ *
+ *  CARA PASANG:
+ *   1. Buka spreadsheet soal > Extensions > Apps Script, tempel seluruh kode ini.
+ *   2. Jalankan fungsi  setup  sekali (klik Run) lalu izinkan akses.
+ *   3. Deploy > New deployment > type: Web app
+ *        Execute as : Me
+ *        Who has access : Anyone
+ *   4. Salin URL Web App (berakhiran /exec) ke CONFIG.API_URL di app.js.
+ *   Setiap kali kode ini diubah: Deploy > Manage deployments > Edit > New version.
+ * ============================================================
+ */
+
+// ---------- KONFIGURASI ----------
+const SPREADSHEET_ID = '15Tuajr2rs6RHCpy7ElyOECmLVSQRPBeDfX8P7mXY86A';
+const NAMA_SHEET_NILAI = 'nilai';
+const CACHE_DETIK = 600;        // cache daftar soal (detik); soal yang diedit tampil maksimal setelah ini
+const CACHE_GAMBAR = 21600;     // cache gambar (detik, maksimum GAS = 6 jam)
+const UKURAN_GAMBAR = 480;      // sisi terpanjang gambar (px) -> file kecil, memuat cepat
+const AMBANG_BUTA_WARNA = 0.8;  // benar >= 80% dianggap "Normal"
+const NILAI_LULUS = 70;         // Nilai Akhir < 70 = Tidak Lulus
+
+// key harus sama dengan key di app.js. bobot 0 = tidak dihitung dalam Nilai Akhir.
+const SECTIONS = [
+  { key: 'dasar',      sheet: 'test kemampuan dasar', label: 'Kemampuan Dasar',   bobot: 1 },
+  { key: 'matematika', sheet: 'test matematika',      label: 'Matematika',        bobot: 1 },
+  { key: 'analogi',    sheet: 'test analogy',         label: 'Analogi',           bobot: 1 },
+  { key: 'butawarna',  sheet: 'test buta warna',      label: 'Buta Warna',        bobot: 0, gambar: true },
+  { key: 'sinonim',    sheet: 'test antonim-sinonim', label: 'Antonim / Sinonim', bobot: 1 }
+];
+
+// ---------- ENTRY POINT ----------
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  const cb = p.callback;
+  try {
+    const action = p.action || 'soal';
+    if (action === 'ping')  return json_({ ok: true, time: new Date().toISOString() }, cb);
+    if (action === 'soal')  return json_(getSoal_(), cb);
+    if (action === 'images') return json_(getImages_(p.key), cb);
+    if (action === 'image') return json_(getImage_(p.key, Number(p.row)), cb);
+    return json_({ ok: false, error: 'Aksi tidak dikenal' }, cb);
+  } catch (err) {
+    return json_({ ok: false, error: String(err && err.message || err) }, cb);
+  }
+}
+
+function doPost(e) {
+  try {
+    const raw = e && e.postData && e.postData.contents;
+    if (!raw) throw new Error('Body kosong');
+    const data = JSON.parse(raw);
+    if (data.action === 'submit') return json_(submit_(data));
+    return json_({ ok: false, error: 'Aksi tidak dikenal' });
+  } catch (err) {
+    return json_({ ok: false, error: String(err && err.message || err) });
+  }
+}
+
+/** Jalankan sekali dari editor: memberi izin akses & menyiapkan sheet "nilai". */
+function setup() {
+  getNilaiSheet_();
+  SECTIONS.forEach(function (s) { findSheet_(s.sheet); });
+  Logger.log('Setup selesai. Sheet "' + NAMA_SHEET_NILAI + '" siap dan semua sheet soal ditemukan.');
+}
+
+// ---------- RESPONS (anti CORS) ----------
+function json_(obj, callback) {
+  const txt = JSON.stringify(obj);
+  if (callback && /^[\w$.]+$/.test(callback)) {
+    return ContentService.createTextOutput(callback + '(' + txt + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(txt).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ---------- AKSES SHEET ----------
+function ss_() { return SpreadsheetApp.openById(SPREADSHEET_ID); }
+
+function norm_(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().toLowerCase(); }
+
+/** Cari sheet tanpa peduli spasi/huruf besar-kecil (nama sheet Anda ada spasi di akhir). */
+function findSheet_(name) {
+  const target = norm_(name);
+  const sheets = ss_().getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    if (norm_(sheets[i].getName()) === target) return sheets[i];
+  }
+  throw new Error('Sheet tidak ditemukan: ' + name);
+}
+
+/** Baca satu sheet soal berdasarkan nama header kolom. */
+function readSection_(sec) {
+  const sh = findSheet_(sec.sheet);
+  const lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+  if (lastRow < 2) return { sheet: sh, cols: {}, rows: [] };
+
+  const values = sh.getRange(1, 1, lastRow, lastCol).getDisplayValues();
+  const head = values[0].map(norm_);
+  const idx = function (n) { return head.indexOf(n); };
+  const cols = {
+    no: idx('no'), soal: idx('soal'),
+    gambar: head.findIndex(function (h) { return h.indexOf('gambar') === 0; }),
+    A: idx('pilihan a'), B: idx('pilihan b'), C: idx('pilihan c'), D: idx('pilihan d'),
+    jawaban: idx('jawaban')
+  };
+  if (cols.soal < 0 || cols.A < 0 || cols.jawaban < 0) {
+    throw new Error('Header sheet "' + sec.sheet + '" harus berisi: No, Soal, Pilihan A-D, Jawaban');
+  }
+  const get = function (r, c) { return c >= 0 ? String(r[c]).trim() : ''; };
+
+  const rows = [];
+  for (var i = 1; i < values.length; i++) {
+    const r = values[i];
+    const pilihan = { A: get(r, cols.A), B: get(r, cols.B), C: get(r, cols.C), D: get(r, cols.D) };
+    const soal = get(r, cols.soal);
+    if (!soal && !pilihan.A && !pilihan.B && !pilihan.C && !pilihan.D) continue;
+    rows.push({
+      id: i + 1,                         // nomor baris di sheet = ID soal (stabil)
+      no: get(r, cols.no),
+      soal: soal,
+      pilihan: pilihan,
+      kunci: get(r, cols.jawaban).toUpperCase().charAt(0)
+    });
+  }
+  return { sheet: sh, cols: cols, rows: rows };
+}
+
+// ---------- SOAL ----------
+function getSoal_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('soal_v1');
+  if (cached) return JSON.parse(cached);
+
+  const sections = SECTIONS.map(function (sec) {
+    const d = readSection_(sec);
+    var imageRows = {};
+    if (sec.gambar && d.cols.gambar >= 0 && d.rows.length) {
+      const colVals = d.sheet.getRange(1, d.cols.gambar + 1, d.sheet.getLastRow(), 1).getValues();
+      d.rows.forEach(function (r) {
+        const v = colVals[r.id - 1][0];
+        if ((v && typeof v === 'object') || (typeof v === 'string' && v.trim())) imageRows[r.id] = true;
+      });
+    }
+    return {
+      key: sec.key,
+      label: sec.label,
+      hasImage: !!sec.gambar,
+      total: d.rows.length,
+      questions: d.rows.map(function (r) {
+        return { id: r.id, soal: r.soal, pilihan: r.pilihan, hasImage: !!imageRows[r.id] };
+      })
+    };
+  });
+
+  const result = { ok: true, sections: sections };
+  try { cache.put('soal_v1', JSON.stringify(result), CACHE_DETIK); } catch (e) { /* terlalu besar: abaikan */ }
+  return result;
+}
+
+// ---------- GAMBAR (buta warna) ----------
+function gambarSection_(key) {
+  const sec = SECTIONS.filter(function (x) { return x.key === key && x.gambar; })[0];
+  if (!sec) throw new Error('Section tidak memiliki gambar');
+  return sec;
+}
+
+/** Ambil URL gambar dari sel (gambar di dalam sel / URL teks / =IMAGE("url")). */
+function urlGambar_(cell) {
+  const v = cell.getValue();
+  if (v && typeof v === 'object' && typeof v.getContentUrl === 'function') return v.getContentUrl();
+  if (typeof v === 'string' && /^https?:\/\//i.test(v.trim())) return v.trim();
+  const m = String(cell.getFormula()).match(/IMAGE\(\s*"([^"]+)"/i);
+  return m ? m[1] : null;
+}
+
+function kolomGambar_(sh) {
+  const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(norm_);
+  const col = head.findIndex(function (h) { return h.indexOf('gambar') === 0; });
+  if (col < 0) throw new Error('Kolom "gambar" tidak ditemukan');
+  return col + 1;
+}
+
+/** Perkecil gambar Google (…=s2048 -> …=s480) supaya ringan dan cepat. */
+function kecilkan_(url) {
+  url = driveDirectUrl_(url);
+  if (/googleusercontent\.com/i.test(url)) url = url.replace(/=[swh]\d+(-[\w-]+)?(?=\?|$)/, '=s' + UKURAN_GAMBAR);
+  return url;
+}
+
+function reqGambar_(url) {
+  const r = { url: url, muteHttpExceptions: true, followRedirects: true };
+  // Token OAuth hanya dikirim ke domain Google
+  if (/^https:\/\/([\w-]+\.)*(google|googleusercontent)\.com\//i.test(url)) {
+    r.headers = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() };
+  }
+  return r;
+}
+
+function dataUri_(res) {
+  const blob = res.getBlob();
+  return 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
+}
+
+function simpanCacheGambar_(cache, k, data) {
+  if (data.length < 95000) { try { cache.put(k, data, CACHE_GAMBAR); } catch (e) { /* abaikan */ } }
+}
+
+/** Semua gambar satu section dalam SATU request (diunduh paralel + di-cache). */
+function getImages_(key) {
+  const sec = gambarSection_(key);
+  const cache = CacheService.getScriptCache();
+  const rows = readSection_(sec).rows;
+  const keys = rows.map(function (r) { return 'img3_' + key + '_' + r.id; });
+  const hit = cache.getAll(keys);
+  const images = {};
+  const todo = [];
+
+  rows.forEach(function (r, i) {
+    if (hit[keys[i]]) images[r.id] = hit[keys[i]]; else todo.push(r);
+  });
+
+  if (todo.length) {
+    const sh = findSheet_(sec.sheet);
+    const col = kolomGambar_(sh);
+    const jobs = [];
+    todo.forEach(function (r) {
+      const u = urlGambar_(sh.getRange(r.id, col));
+      if (u) jobs.push({ id: r.id, url: kecilkan_(u) });
+    });
+    const resp = UrlFetchApp.fetchAll(jobs.map(function (j) { return reqGambar_(j.url); }));
+    jobs.forEach(function (j, i) {
+      var res = resp[i];
+      if (res.getResponseCode() !== 200) res = UrlFetchApp.fetch(j.url, { muteHttpExceptions: true, followRedirects: true });
+      if (res.getResponseCode() === 200) {
+        const d = dataUri_(res);
+        images[j.id] = d;
+        simpanCacheGambar_(cache, 'img3_' + key + '_' + j.id, d);
+      }
+    });
+  }
+  return { ok: true, images: images };
+}
+
+/** Satu gambar (cadangan bila getImages_ gagal). */
+function getImage_(key, row) {
+  const sec = gambarSection_(key);
+  if (!row || row < 2) throw new Error('Baris tidak valid');
+  const cache = CacheService.getScriptCache();
+  const ck = 'img3_' + key + '_' + row;
+  const hit = cache.get(ck);
+  if (hit) return { ok: true, data: hit };
+
+  const sh = findSheet_(sec.sheet);
+  const u = urlGambar_(sh.getRange(row, kolomGambar_(sh)));
+  if (!u) throw new Error('Gambar tidak ditemukan di baris ' + row);
+  const url = kecilkan_(u);
+  var res = UrlFetchApp.fetch(url, reqGambar_(url));
+  if (res.getResponseCode() !== 200) res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+  if (res.getResponseCode() !== 200) throw new Error('Gagal mengambil gambar (HTTP ' + res.getResponseCode() + ')');
+  const data = dataUri_(res);
+  simpanCacheGambar_(cache, ck, data);
+  return { ok: true, data: data };
+}
+
+function driveDirectUrl_(url) {
+  const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]+)/i);
+  return m ? 'https://drive.google.com/uc?export=download&id=' + m[1] : url;
+}
+
+/** OPSIONAL: pasang sebagai Trigger (time-driven, tiap 5 jam) agar soal & gambar selalu "hangat" di cache. */
+function pemanasan() {
+  getSoal_();
+  SECTIONS.forEach(function (s) { if (s.gambar) getImages_(s.key); });
+}
+
+// ---------- SIMPAN & NILAI ----------
+function headerNilai_() {
+  const h = ['Waktu Submit', 'ID Submit', 'Nama', 'Jabatan Dilamar', 'Usia', 'Pendidikan Terakhir', 'Jurusan'];
+  SECTIONS.forEach(function (s) { h.push('Nilai ' + s.label); });
+  h.push('Nilai Akhir', 'Kelulusan', 'Keterangan Buta Warna');
+  SECTIONS.forEach(function (s) { h.push('Benar ' + s.label); });
+  h.push('Durasi (menit)', 'Pindah Tab', 'Jawaban (JSON)');
+  return h;
+}
+
+function getNilaiSheet_() {
+  const ss = ss_();
+  var sh = ss.getSheetByName(NAMA_SHEET_NILAI);
+  if (!sh) sh = ss.insertSheet(NAMA_SHEET_NILAI);
+  if (sh.getLastRow() === 0) {
+    const h = headerNilai_();
+    sh.getRange(1, 1, 1, h.length).setValues([h])
+      .setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
+    sh.setFrozenRows(1);
+  } else {
+    // Sheet lama (sebelum ada kolom Kelulusan): sisipkan kolomnya di sebelah Nilai Akhir
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(norm_);
+    const iNilai = head.indexOf('nilai akhir');
+    if (iNilai >= 0 && head.indexOf('kelulusan') < 0) {
+      sh.insertColumnAfter(iNilai + 1);
+      sh.getRange(1, iNilai + 2).setValue('Kelulusan')
+        .setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
+      const n = sh.getLastRow() - 1;
+      if (n > 0) {
+        const nilai = sh.getRange(2, iNilai + 1, n, 1).getValues();
+        sh.getRange(2, iNilai + 2, n, 1).setValues(nilai.map(function (r) { return [lulus_(r[0])]; }));
+      }
+    }
+  }
+  return sh;
+}
+
+function lulus_(nilaiAkhir) {
+  return Number(nilaiAkhir) >= NILAI_LULUS ? 'Lulus' : 'Tidak Lulus';
+}
+
+function clean_(v, max) {
+  var s = String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max || 100);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;      // cegah formula injection
+  return s;
+}
+
+function submit_(data) {
+  const bio = data.bio || {};
+  const nama = clean_(bio.nama, 100), jabatan = clean_(bio.jabatan, 100);
+  const pendidikan = clean_(bio.pendidikan, 50), jurusan = clean_(bio.jurusan, 100);
+  const usia = Number(bio.usia);
+  if (nama.length < 3 || !jabatan || !pendidikan || !jurusan) throw new Error('Biodata belum lengkap');
+  if (!(usia >= 15 && usia <= 75)) throw new Error('Usia tidak valid');
+
+  const submitId = clean_(data.submitId, 60);
+  const jawab = (data.answers && typeof data.answers === 'object') ? data.answers : {};
+
+  // Hitung nilai di server
+  var hasil = {}, totalBobot = 0, jumlah = 0;
+  SECTIONS.forEach(function (sec) {
+    const rows = readSection_(sec).rows;
+    const mine = (jawab[sec.key] && typeof jawab[sec.key] === 'object') ? jawab[sec.key] : {};
+    var total = 0, benar = 0;
+    rows.forEach(function (r) {
+      if (!r.kunci) return;
+      total++;
+      if (String(mine[String(r.id)] || '').toUpperCase() === r.kunci) benar++;
+    });
+    const nilai = total ? Math.round(benar / total * 10000) / 100 : 0;
+    hasil[sec.key] = { benar: benar, total: total, nilai: nilai };
+    if (sec.bobot > 0) { jumlah += nilai * sec.bobot; totalBobot += sec.bobot; }
+  });
+  const nilaiAkhir = totalBobot ? Math.round(jumlah / totalBobot * 100) / 100 : 0;
+  const bw = hasil.butawarna;
+  const ketBW = (bw && bw.total)
+    ? (bw.benar / bw.total >= AMBANG_BUTA_WARNA ? 'Normal' : 'Indikasi buta warna (perlu pemeriksaan)')
+    : '-';
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const sh = getNilaiSheet_();
+    // Cegah baris ganda bila peserta/ jaringan mengirim ulang
+    if (submitId && sh.getLastRow() > 1) {
+      const found = sh.getRange(2, 2, sh.getLastRow() - 1, 1).createTextFinder(submitId).matchEntireCell(true).findNext();
+      if (found) return { ok: true, duplicate: true };
+    }
+    const row = [
+      Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss'),
+      submitId, nama, jabatan, usia, pendidikan, jurusan
+    ];
+    SECTIONS.forEach(function (s) { row.push(hasil[s.key].nilai); });
+    row.push(nilaiAkhir, lulus_(nilaiAkhir), ketBW);
+    SECTIONS.forEach(function (s) { row.push(hasil[s.key].benar); });
+    row.push(
+      Math.round((Number(data.durasiDetik) || 0) / 60 * 10) / 10,
+      Math.max(0, Number(data.pindahTab) || 0),
+      JSON.stringify(jawab).slice(0, 45000)
+    );
+    sh.appendRow(row);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true };
+}
