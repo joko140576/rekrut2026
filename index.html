@@ -438,7 +438,7 @@ const TAHAP = [
   {judul:"Test online", isi:"Pelamar mengerjakan tes secara online. Tautan tes dibagikan kepada peserta yang sudah diwawancara.", tombol:"Mulai test online", link:"soal.html"},
   {judul:"Penerimaan", isi:"Hasil wawancara dan tes ditetapkan, lalu pengumuman penerimaan disampaikan kepada pelamar.", tombol:"Lihat pengumuman", link:""},
   {judul:"Upload dokumen", isi:"Pelamar yang diterima mengunggah dokumen kepegawaian yang diminta.", tombol:"Upload dokumen", link:""},
-  {judul:"Onboarding", isi:"Pegawai baru mengikuti pengenalan perusahaan dan mulai bertugas di COU/Sentra penempatan.", tombol:"Buka onboarding", link:"https://portal-training.vercel.app"}
+  {judul:"Onboarding", isi:"Pegawai baru mengikuti pengenalan perusahaan dan mulai bertugas di COU/Sentra penempatan.", tombol:"Buka onboarding", link:"https://portal-training.vercel.app/portal.html"}
 ];
 $("#timeline").innerHTML=TAHAP.map((t,i)=>`<li class="tl"><div class="dot">${i+1}</div><div class="body">
   <span class="lbl">STEP ${i+1}</span><h3>${esc(t.judul)}</h3><p>${esc(t.isi)}</p>
