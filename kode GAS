@@ -1,0 +1,75 @@
+/**
+ * BACKEND REKRUTMEN 2026 (Google Apps Script)
+ * Pasang di spreadsheet: Extensions > Apps Script.
+ * Jalankan fungsi setup() sekali, lalu Deploy > New deployment > Web app
+ *   Execute as: Me | Who has access: Anyone
+ * Salin URL web app ke API_URL di index.html.
+ *
+ * Sheet "jadwal": TGL INTERVIEW | HARI INTERVIEW | JAM INTERVIEW | COU/SENTRA | KEBUTUHAN | NO SURAT PERMINTAAN | TANGGAL SURAT
+ * Sheet "users" : username | password
+ */
+var HEAD = ['TGL INTERVIEW','HARI INTERVIEW','JAM INTERVIEW','COU/SENTRA','KEBUTUHAN','NO SURAT PERMINTAAN','TANGGAL SURAT'];
+
+function setup() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var j = ss.getSheetByName('jadwal') || ss.insertSheet('jadwal');
+  if (j.getLastRow() === 0) j.appendRow(HEAD);
+  j.getRange('A:G').setNumberFormat('@'); // simpan sebagai teks agar tanggal/jam tidak berubah format
+  j.getRange(1,1,1,7).setFontWeight('bold');
+  j.setFrozenRows(1);
+  var u = ss.getSheetByName('users') || ss.insertSheet('users');
+  if (u.getLastRow() === 0) { u.appendRow(['username','password']); u.appendRow(['rekrut2026','rekrut123545']); }
+  u.getRange('A:B').setNumberFormat('@');
+}
+
+function out_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+function jadwal_() { return SpreadsheetApp.getActiveSpreadsheet().getSheetByName('jadwal'); }
+
+function auth_(user, pass) {
+  var s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('users');
+  if (!s) return false;
+  var v = s.getDataRange().getValues();
+  for (var i = 1; i < v.length; i++) {
+    if (String(v[i][0]).trim() === String(user) && String(v[i][1]).trim() === String(pass)) return true;
+  }
+  return false;
+}
+
+function doGet() {
+  var sh = jadwal_();
+  var v = sh.getDataRange().getDisplayValues();
+  var rows = [];
+  for (var i = 1; i < v.length; i++) {
+    if (v[i].join('') === '') continue;
+    rows.push({ row: i + 1, tgl: v[i][0], hari: v[i][1], jam: v[i][2], cou: v[i][3],
+                kebutuhan: v[i][4], noSurat: v[i][5], tglSurat: v[i][6] });
+  }
+  return out_({ ok: true, rows: rows });
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var d = JSON.parse(e.postData.contents);
+    if (!auth_(d.user, d.pass)) return out_({ ok: false, error: 'Username atau password salah.' });
+    if (d.action === 'login') return out_({ ok: true });
+    var sh = jadwal_();
+    if (d.action === 'add') {
+      var r = d.data;
+      sh.appendRow([r.tgl, r.hari, r.jam, r.cou, r.kebutuhan, r.noSurat, r.tglSurat]);
+      return out_({ ok: true });
+    }
+    if (d.action === 'delete') {
+      var n = Number(d.row);
+      if (n < 2 || n > sh.getLastRow()) return out_({ ok: false, error: 'Baris tidak ditemukan.' });
+      sh.deleteRow(n);
+      return out_({ ok: true });
+    }
+    return out_({ ok: false, error: 'Aksi tidak dikenal.' });
+  } catch (err) {
+    return out_({ ok: false, error: String(err) });
+  } finally { lock.releaseLock(); }
+}
