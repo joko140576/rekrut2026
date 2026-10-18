@@ -433,12 +433,12 @@ $("#tbody").addEventListener("click",async e=>{
    Isi "link" tiap tahap dengan alamat tujuan (https://...). Kosong = tombol nonaktif. */
 const TAHAP = [
   {judul:"Filter database lowongan", isi:"Data lowongan dan kebutuhan tiap COU/Sentra disaring untuk memastikan posisi yang dibuka sesuai surat permintaan.", tombol:"Buka database lowongan", link:""},
-  {judul:"Checker", isi:"Berkas dan data pelamar diperiksa terhadap kriteria kebutuhan. Hanya pelamar yang lolos pemeriksaan maju ke tahap berikutnya.", tombol:"Buka checker", link:""},
+  {judul:"Checker", isi:"Berkas dan data pelamar diperiksa terhadap kriteria kebutuhan. Hanya pelamar yang lolos pemeriksaan maju ke tahap berikutnya.", tombol:"Buka checker", link:"https://checker-hcc.vercel.app/"},
   {judul:"Wawancara", isi:"Pelamar yang lolos diundang interview sesuai tanggal, hari, jam dan COU/Sentra pada Jadwal Rekrut.", tombol:"Lihat jadwal wawancara", link:""},
-  {judul:"Test online", isi:"Pelamar mengerjakan tes secara online. Tautan tes dibagikan kepada peserta yang sudah diwawancara.", tombol:"Mulai test online", link:""},
+  {judul:"Test online", isi:"Pelamar mengerjakan tes secara online. Tautan tes dibagikan kepada peserta yang sudah diwawancara.", tombol:"Mulai test online", link:"soal.html"},
   {judul:"Penerimaan", isi:"Hasil wawancara dan tes ditetapkan, lalu pengumuman penerimaan disampaikan kepada pelamar.", tombol:"Lihat pengumuman", link:""},
   {judul:"Upload dokumen", isi:"Pelamar yang diterima mengunggah dokumen kepegawaian yang diminta.", tombol:"Upload dokumen", link:""},
-  {judul:"Onboarding", isi:"Pegawai baru mengikuti pengenalan perusahaan dan mulai bertugas di COU/Sentra penempatan.", tombol:"Buka onboarding", link:""}
+  {judul:"Onboarding", isi:"Pegawai baru mengikuti pengenalan perusahaan dan mulai bertugas di COU/Sentra penempatan.", tombol:"Buka onboarding", link:"https://portal-training.vercel.app"}
 ];
 $("#timeline").innerHTML=TAHAP.map((t,i)=>`<li class="tl"><div class="dot">${i+1}</div><div class="body">
   <span class="lbl">STEP ${i+1}</span><h3>${esc(t.judul)}</h3><p>${esc(t.isi)}</p>
