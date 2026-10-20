@@ -561,7 +561,7 @@ $("#nav").addEventListener("click",e=>{
   b.setAttribute("aria-current","page");
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+b.dataset.view));
   $("#subnav").hidden=!SUBVIEWS.includes(b.dataset.view);
-  if(b.dataset.view==="hasil"&&!hasilLoaded){hasilLoaded=true;loadHasil()}
+  if(b.dataset.view==="hasil"&&Date.now()-hasilTs>60000){hasilLoaded=true;loadHasil()}
   $(".main").scrollTop=0;
 });
 
@@ -730,8 +730,20 @@ const KOLOM=[
 ];
 function cellVal(c){if(!c)return "";const v=c.f!=null?c.f:c.v;return v==null?"":String(v)}
 
-async function loadHasil(){
-  const ban=$("#bannerHasil");ban.hidden=false;ban.innerHTML="<b>Memuat data...</b>";
+const HASIL_CACHE_KEY="hasil_cache_v1";
+let hasilTs=0, hasilBusy=false;
+function bacaCache(){try{const c=JSON.parse(localStorage.getItem(HASIL_CACHE_KEY)||"null");return c&&Array.isArray(c.data)?c:null}catch(e){return null}}
+function simpanCache(){try{localStorage.setItem(HASIL_CACHE_KEY,JSON.stringify({t:Date.now(),data:hasil}))}catch(e){}}
+
+/* paksa=true: dari tombol "Muat ulang". Tanpa itu, data cache tampil seketika lalu diperbarui di belakang layar. */
+async function loadHasil(paksa){
+  if(hasilBusy)return;
+  hasilBusy=true;
+  const ban=$("#bannerHasil");
+  const cache=paksa===true?null:bacaCache();
+  if(cache&&!hasil.length){hasil=cache.data;renderHasil()}
+  if(hasil.length){ban.hidden=false;ban.innerHTML="<b>Memperbarui data...</b>"}
+  else{ban.hidden=false;ban.innerHTML="<b>Memuat data...</b>"}
   try{
     let headers,data;
     if(HASIL_API_URL){
@@ -768,10 +780,18 @@ async function loadHasil(){
       const o={};KOLOM.forEach(k=>{o[k.key]=peta[k.key]>=0?(rw[peta[k.key]]||""):""});return o;
     }).filter(o=>o.nama.trim()!=="");
     ban.hidden=true;
+    hasilTs=Date.now();
+    simpanCache();
   }catch(err){
-    hasil=[];
-    ban.innerHTML="<b>Hasil test belum bisa dimuat.</b> Pastikan spreadsheet dibagikan dengan akses \"Siapa saja yang memiliki link dapat melihat\", lalu klik Muat ulang.";
+    if(hasil.length){
+      ban.hidden=false;
+      ban.innerHTML="<b>Menampilkan data tersimpan.</b> Pembaruan gagal, klik Muat ulang untuk mencoba lagi.";
+    }else{
+      ban.hidden=false;
+      ban.innerHTML="<b>Hasil test belum bisa dimuat.</b> Pastikan spreadsheet dibagikan dengan akses \"Siapa saja yang memiliki link dapat melihat\", lalu klik Muat ulang.";
+    }
   }
+  hasilBusy=false;
   renderHasil();
 }
 function renderHasil(){
@@ -786,9 +806,12 @@ function renderHasil(){
   $("#countHasil").textContent=list.length+" pelamar";
 }
 $("#qh").addEventListener("input",renderHasil);
-$("#btnRefreshHasil").addEventListener("click",loadHasil);
+$("#btnRefreshHasil").addEventListener("click",()=>loadHasil(true));
 
 load();
+/* muat data hasil test di latar belakang agar tabel sudah siap saat menu dibuka */
+{const cache=bacaCache();if(cache){hasil=cache.data;renderHasil()}}
+setTimeout(()=>{hasilLoaded=true;loadHasil()},600);
 </script>
 </body>
 </html>
