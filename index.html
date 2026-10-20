@@ -42,6 +42,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body)
 .nav svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .side-foot{margin-top:auto;padding:0 10px;font-size:12px;opacity:.7}
 
+/* sub menu Alur Rekrutmen */
+.subnav{display:flex;flex-direction:column;gap:2px;margin:0 0 4px 22px;padding-left:10px;border-left:1px solid rgba(255,255,255,.18)}
+.subnav[hidden]{display:none}
+.nav .subnav button{padding:8px 10px;font-size:14px;font-weight:400}
+.nav .subnav svg{width:16px;height:16px}
+
 /* konten */
 .main{overflow-y:auto;padding-block:32px 48px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
 .view{max-width:1100px;margin:0 auto;display:none;flex-direction:column;gap:20px}
@@ -67,6 +73,7 @@ td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:0}
 td.num,td.mono{font-family:var(--f-mono);font-size:13.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 td.keb{min-width:200px}
+td.adm{white-space:nowrap}
 tr.past td{opacity:.5}
 tr.today td{background:var(--soft)}
 .pill{display:inline-block;font:500 11px var(--f-mono);letter-spacing:.06em;padding:2px 8px;border-radius:99px;background:var(--accent);color:var(--accent-ink);margin-left:8px;vertical-align:middle}
@@ -125,15 +132,42 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
 .about p{margin:0 0 10px;color:var(--muted)}
 .mini{display:flex;flex-wrap:wrap;gap:8px}
 .mini span{font:500 12px var(--f-mono);padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg)}
+
+/* SUB MENU: halaman detail */
+.detail{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:center;padding:clamp(20px,3vw,34px)}
+.detail .dtxt{display:flex;flex-direction:column;gap:14px;align-items:flex-start;min-width:0}
+.detail .bigic{width:56px;height:56px;border-radius:14px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.detail .bigic svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.detail h3{margin:0;font:700 24px/1.15 var(--f-display);text-wrap:balance}
+.detail p{margin:0;color:var(--muted);max-width:56ch}
+.detail .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.detail .btn{text-decoration:none;display:inline-block}
+.detail .dimg{border-radius:14px;background:linear-gradient(135deg,#0c2b3a 0%,#0f4a52 60%,#0b7a68 130%);padding:18px;display:grid;place-items:center}
+.detail .dimg svg{width:100%;height:auto;max-height:300px}
+.detail.one{grid-template-columns:1fr;padding:18px 22px}
+.detail.one p{max-width:none}
+.kriteria{color:var(--ink);background:rgba(179,38,30,.1);border:1px solid rgba(179,38,30,.3);border-radius:8px;padding:12px 16px;width:100%}
+.kriteria b:first-child{color:var(--danger)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .kriteria{background:rgba(242,131,124,.14);border-color:rgba(242,131,124,.35)}}
+:root[data-theme="dark"] .kriteria{background:rgba(242,131,124,.14);border-color:rgba(242,131,124,.35)}
+.urlbox{display:inline-block;font:500 13.5px var(--f-mono);color:var(--danger);background:rgba(179,38,30,.1);border:1px solid rgba(179,38,30,.3);border-radius:6px;padding:1px 8px;word-break:break-all}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .urlbox{background:rgba(242,131,124,.14);border-color:rgba(242,131,124,.35)}}
+:root[data-theme="dark"] .urlbox{background:rgba(242,131,124,.14);border-color:rgba(242,131,124,.35)}
+.tag{display:inline-block;font:500 12px var(--f-mono);padding:2px 9px;border-radius:99px;border:1px solid var(--line);white-space:nowrap}
+.tag.ok{background:var(--soft);color:var(--accent);border-color:var(--accent)}
+.tag.no{color:var(--danger);border-color:var(--danger)}
+#tblHasil{min-width:860px}
+
 @media (prefers-reduced-motion:no-preference){.pulse{animation:pl 3s ease-in-out infinite}@keyframes pl{50%{opacity:.35}}}
-@media (max-width:820px){.hero,.about{grid-template-columns:1fr}.hero svg{max-height:240px}}
+@media (max-width:820px){.hero,.about,.detail{grid-template-columns:1fr}.hero svg{max-height:240px}}
 .topbar{display:none}
 @media (max-width:820px){
   .app{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
   .side{flex-direction:row;align-items:center;gap:8px;padding:10px 12px;overflow-x:auto;overflow-y:hidden;padding-left:max(12px,env(safe-area-inset-left,0px))}
   .brand,.side-foot{display:none}
-  .nav{flex-direction:row}
+  .nav{flex-direction:row;align-items:center}
   .nav button{white-space:nowrap}
+  .subnav{flex-direction:row;margin:0;padding:0 0 0 8px;border-left:1px solid rgba(255,255,255,.18)}
   .main{padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
   .head h2{font-size:24px}
   dialog form{grid-template-columns:1fr}
@@ -149,6 +183,11 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
       <button data-view="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>Home</button>
       <button data-view="jadwal"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Jadwal Rekrut</button>
       <button data-view="alur"><svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="18" r="2"/><path d="M6.5 7.5l4 3.2M13.5 13.3l4 3.2"/></svg>Alur Rekrutmen</button>
+      <div class="subnav" id="subnav" hidden>
+        <button data-view="tpl"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg>Template Lowongan</button>
+        <button data-view="hasil"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>Hasil Test Online</button>
+        <button data-view="wwc"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Template Wawancara</button>
+      </div>
       <button data-view="syarat"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></svg>Persyaratan</button>
       <button data-view="kontak"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 4z"/></svg>Kontak</button>
     </nav>
@@ -259,6 +298,98 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
       <ol class="timeline" id="timeline"></ol>
     </section>
 
+    <!-- SUB MENU: TEMPLATE LOWONGAN -->
+    <section class="view" id="v-tpl">
+      <div class="head"><div><h2>Template Lowongan</h2><p>Sub menu Alur Rekrutmen: form lamaran dan materi lowongan.</p></div></div>
+      <div class="card detail">
+        <div class="dtxt">
+          <div class="bigic"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg></div>
+          <h3>Form Lamaran Pegawai Baru</h3>
+          <p>Template lowongan adalah form lamaran untuk calon pegawai baru. Pelamar mengisi data diri, pendidikan, dan posisi yang dituju melalui alamat website: <b class="urlbox">https://lamaran-ssi.vercel.app</b>. Data yang masuk menjadi bahan penyaringan pada tahap berikutnya.</p>
+          <div class="btns">
+            <a class="btn primary" href="https://lamaran-ssi.vercel.app" target="_blank" rel="noopener">Template Lowongan</a>
+            <a class="btn" id="lnkIklan" role="link">Buat gambar iklan lowongan</a>
+          </div>
+        </div>
+        <div class="dimg">
+          <svg viewBox="0 0 360 280" role="img" aria-label="Ilustrasi form lamaran pekerjaan">
+            <rect x="90" y="20" width="180" height="240" rx="14" fill="#ffffff" fill-opacity=".12" stroke="#8be3cf" stroke-opacity=".7" stroke-width="2"/>
+            <rect x="112" y="44" width="70" height="10" rx="5" fill="#8be3cf"/>
+            <g fill="#ffffff" fill-opacity=".28"><rect x="112" y="78" width="136" height="16" rx="4"/><rect x="112" y="108" width="136" height="16" rx="4"/><rect x="112" y="138" width="136" height="16" rx="4"/><rect x="112" y="168" width="88" height="16" rx="4"/></g>
+            <rect x="112" y="204" width="86" height="30" rx="8" fill="#3cc2a9"/>
+            <path d="M130 219l7 7 14-15" stroke="#06201a" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <g transform="translate(286 70)"><circle r="30" fill="#0c2b3a" stroke="#8be3cf" stroke-width="2"/><circle cy="-7" r="8" fill="#ffffff"/><path d="M-14 18c2-12 9-16 14-16s12 4 14 16" fill="#ffffff"/></g>
+            <g transform="translate(70 200) rotate(-18)"><rect x="-6" y="-34" width="12" height="52" rx="3" fill="#8be3cf"/><path d="M-6 18l6 12 6-12z" fill="#ffffff"/></g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUB MENU: HASIL TEST ONLINE -->
+    <section class="view" id="v-hasil">
+      <div class="head">
+        <div>
+          <h2>Hasil Test Online</h2>
+          <p>Hasil tes online pelamar yang dibaca langsung dari spreadsheet, berisi nilai akhir dan status kelulusan.</p>
+        </div>
+        <div class="tools">
+          <input id="qh" type="search" placeholder="Cari nama, jabatan, jurusan" aria-label="Cari hasil test">
+          <button class="btn" id="btnRefreshHasil">Muat ulang</button>
+        </div>
+      </div>
+      <div class="card detail one">
+        <div class="dtxt">
+          <p class="kriteria">
+            <b>Kriteria seleksi:</b>
+            <br>
+            1. <b>Kelulusan:</b> Pelamar dinyatakan lulus jika nilai akhir lebih dari 70 (&gt;70).
+            <br>
+            2. <b>Buta warna:</b> Pelamar harus memiliki keterangan tidak buta warna.
+          </p>
+        </div>
+      </div>
+      <div class="banner" id="bannerHasil" hidden></div>
+      <div class="card">
+        <div class="tablewrap">
+          <table id="tblHasil">
+            <thead><tr>
+              <th>NAMA</th><th>JABATAN DILAMAR</th><th>PENDIDIKAN</th><th>JURUSAN</th><th>KETERANGAN BUTA WARNA</th><th>NILAI AKHIR</th><th>KELULUSAN</th>
+            </tr></thead>
+            <tbody id="tbHasil"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="emptyHasil" hidden>Belum ada data hasil yang cocok.</div>
+      </div>
+      <div class="count" id="countHasil"></div>
+    </section>
+
+    <!-- SUB MENU: TEMPLATE WAWANCARA -->
+    <section class="view" id="v-wwc">
+      <div class="head"><div><h2>Template Wawancara</h2><p>Sub menu Alur Rekrutmen: panduan dan formulir wawancara.</p></div></div>
+      <div class="card detail">
+        <div class="dtxt">
+          <div class="bigic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></div>
+          <h3>Template penilaian wawancara</h3>
+          <p>Template wawancara adalah format baku yang dipakai pewawancara untuk mencatat jawaban dan menilai pelamar secara seragam, sehingga hasil interview lebih mudah untuk diarahkan </p>
+          <div class="btns">
+            <a class="btn primary" id="lnkWwc" role="link">Buka template wawancara</a>
+          </div>
+        </div>
+        <div class="dimg">
+          <svg viewBox="0 0 360 240" role="img" aria-label="Ilustrasi wawancara">
+            <g transform="translate(110 100)"><circle r="40" fill="#0c2b3a" stroke="#8be3cf" stroke-width="2"/><circle cy="-10" r="12" fill="#8be3cf"/><path d="M-22 26c3-18 13-24 22-24s19 6 22 24" fill="#8be3cf"/></g>
+            <g transform="translate(250 100)"><circle r="40" fill="#0c2b3a" stroke="#8be3cf" stroke-width="2"/><circle cy="-10" r="12" fill="#ffffff"/><path d="M-22 26c3-18 13-24 22-24s19 6 22 24" fill="#ffffff"/></g>
+            <rect x="60" y="30" width="86" height="34" rx="12" fill="#3cc2a9"/><path d="M80 64l-6 14 18-14z" fill="#3cc2a9"/>
+            <g fill="#06201a" fill-opacity=".6"><rect x="74" y="42" width="58" height="6" rx="3"/><rect x="74" y="52" width="38" height="6" rx="3"/></g>
+            <rect x="214" y="30" width="86" height="34" rx="12" fill="#ffffff" fill-opacity=".85"/><path d="M280 64l6 14-18-14z" fill="#ffffff" fill-opacity=".85"/>
+            <rect x="60" y="170" width="240" height="44" rx="10" fill="#ffffff" fill-opacity=".12" stroke="#8be3cf" stroke-opacity=".6"/>
+            <path d="M80 192l8 8 16-16" stroke="#8be3cf" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <g fill="#ffffff" fill-opacity=".4"><rect x="124" y="186" width="150" height="8" rx="4"/><rect x="124" y="200" width="100" height="8" rx="4"/></g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
     <!-- SYARAT -->
     <section class="view" id="v-syarat">
       <div class="head"><div><h2>Persyaratan</h2><p>Siapkan dokumen berikut sebelum hari interview.</p></div></div>
@@ -299,7 +430,7 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
 <!-- Tambah -->
 <dialog id="dlgAdd">
   <form method="dialog" id="fAdd" autocomplete="off">
-    <h3>Tambah jadwal rekrut</h3>
+    <h3 id="addTitle">Tambah jadwal rekrut</h3>
     <label>Tanggal interview<input id="a_tgl" type="date" required></label>
     <label>Hari interview<input id="a_hari" readonly placeholder="otomatis"></label>
     <label>Jam interview<input id="a_jam" type="time" required></label>
@@ -317,10 +448,25 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
    Tempel URL Web App Google Apps Script (lihat Code.gs) di bawah ini. */
 const API_URL = "https://script.google.com/macros/s/AKfycbyBR_qtQp2D5qvVBfVlO_QsJfoFnbw6Ts9FgxrPZRvvv54fNG1KFsdczwC3lSL05ac/exec";
 
+/* ====== LINK SUB MENU ALUR REKRUTMEN ======
+   Isi dengan alamat tujuan (https://...). Kosong = tombol nonaktif. */
+const LINK_BUAT_IKLAN        = "";   // tombol "Buat gambar iklan lowongan"
+const LINK_TEMPLATE_WAWANCARA = "https://wawancara-ssi.vercel.app";  // tombol "Buka template wawancara"
+
+/* Spreadsheet hasil test online (sheet "hasil", gid 1267186563).
+   Spreadsheet harus dibagikan: "Siapa saja yang memiliki link bisa melihat". */
+const HASIL_SHEET_ID = "15Tuajr2rs6RHCpy7ElyOECmLVSQRPBeDfX8P7mXY86A";
+const HASIL_GID = "1267186563";
+/* Opsional (disarankan): URL Web App Google Apps Script khusus sheet hasil.
+   Jika diisi, data dibaca lewat GAS dan spreadsheet tidak perlu dibuka untuk umum. */
+const HASIL_API_URL = "https://script.google.com/macros/s/AKfycbxyPhpmxedi6r_rQTM4wAf9LQF3Vbr0Nrzrr0YSaK9iU-eZXEI-c0dCsJEKGiGSwgp3/exec";
+/* Huruf kolom untuk "Keterangan buta warna" (isinya mis. Normal). Kosongkan untuk deteksi otomatis dari judul. */
+const HASIL_KOL_BUTA = "O";
+
 const HARI = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
 const BLN = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
 const $ = s => document.querySelector(s);
-let rows = [], auth = null;
+let rows = [], auth = null, editRow = null;
 
 const SAMPLE = [
   {tgl:"2026-10-22",hari:"Kamis",jam:"09:00",cou:"Contoh COU A",kebutuhan:"2 Staf Administrasi",noSurat:"001/CONTOH/X/2026",tglSurat:"2026-10-10"},
@@ -333,11 +479,15 @@ function hariDari(s){const d=new Date(s+"T00:00:00");return isNaN(d)?"":HARI[d.g
 function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 
 /* navigasi */
+const SUBVIEWS = ["alur","tpl","hasil","wwc"];
+let hasilLoaded = false;
 $("#nav").addEventListener("click",e=>{
   const b=e.target.closest("button[data-view]");if(!b)return;
   document.querySelectorAll("#nav button").forEach(x=>x.removeAttribute("aria-current"));
   b.setAttribute("aria-current","page");
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+b.dataset.view));
+  $("#subnav").hidden=!SUBVIEWS.includes(b.dataset.view);
+  if(b.dataset.view==="hasil"&&!hasilLoaded){hasilLoaded=true;loadHasil()}
   $(".main").scrollTop=0;
 });
 
@@ -354,7 +504,7 @@ function render(){
       <td class="num">${fmtTgl(r.tgl)}${r.tgl===t?'<span class="pill">HARI INI</span>':""}</td>
       <td>${esc(r.hari)}</td><td class="num">${esc(r.jam)}</td><td><b>${esc(r.cou)}</b></td>
       <td class="keb">${esc(r.kebutuhan)}</td><td class="mono">${esc(r.noSurat)}</td><td class="num">${fmtTgl(r.tglSurat)}</td>
-      <td class="adm" ${auth?"":"hidden"}>${r.row?`<button class="btn sm danger" data-del="${r.row}">Hapus</button>`:""}</td></tr>`}).join("");
+      <td class="adm" ${auth?"":"hidden"}>${r.row?`<button class="btn sm" data-edit="${r.row}">Edit</button> <button class="btn sm danger" data-del="${r.row}">Hapus</button>`:""}</td></tr>`}).join("");
   $("#empty").hidden=list.length>0;
   $("#count").textContent=list.length+" jadwal";
   $("#stJadwal").textContent=rows.filter(r=>r.tgl>=t).length;
@@ -409,14 +559,30 @@ $("#fLogin").addEventListener("submit",async e=>{
 });
 
 /* tambah */
-$("#btnAdd").onclick=()=>{$("#fAdd").reset();$("#aerr").textContent="";$("#dlgAdd").showModal()};
+$("#btnAdd").onclick=()=>{editRow=null;$("#fAdd").reset();$("#addTitle").textContent="Tambah jadwal rekrut";$("#ago").textContent="Simpan";$("#aerr").textContent="";$("#dlgAdd").showModal()};
+/* edit: buka form yang sama, terisi data baris */
+$("#tbody").addEventListener("click",e=>{
+  const b=e.target.closest("[data-edit]");if(!b||!auth)return;
+  const r=rows.find(x=>String(x.row)===b.dataset.edit);if(!r)return;
+  editRow=r.row;
+  $("#fAdd").reset();
+  $("#a_tgl").value=r.tgl;$("#a_hari").value=hariDari(r.tgl);$("#a_jam").value=r.jam;$("#a_cou").value=r.cou;
+  $("#a_keb").value=r.kebutuhan;$("#a_no").value=r.noSurat;$("#a_tglsurat").value=r.tglSurat;
+  $("#addTitle").textContent="Edit jadwal rekrut";$("#ago").textContent="Simpan perubahan";
+  $("#aerr").textContent="";$("#dlgAdd").showModal();
+});
 $("#a_tgl").addEventListener("input",()=>$("#a_hari").value=hariDari($("#a_tgl").value));
 $("#fAdd").addEventListener("submit",async e=>{
   e.preventDefault();
   const data={tgl:$("#a_tgl").value,hari:hariDari($("#a_tgl").value),jam:$("#a_jam").value,cou:$("#a_cou").value.trim(),
     kebutuhan:$("#a_keb").value.trim(),noSurat:$("#a_no").value.trim(),tglSurat:$("#a_tglsurat").value};
   $("#ago").disabled=true;$("#aerr").textContent="Menyimpan...";
-  try{await post({action:"add",...auth,data});$("#dlgAdd").close();await load()}
+  try{
+    /* tanpa aksi "update" di GAS: tambah baris baru, lalu hapus baris lama */
+    await post({action:"add",...auth,data});
+    if(editRow)await post({action:"delete",...auth,row:editRow});
+    $("#dlgAdd").close();await load();
+  }
   catch(err){$("#aerr").textContent=err.message}
   $("#ago").disabled=false;
 });
@@ -445,6 +611,87 @@ $("#timeline").innerHTML=TAHAP.map((t,i)=>`<li class="tl"><div class="dot">${i+1
   ${t.link?`<a class="btn primary" href="${esc(t.link)}" target="_blank" rel="noopener">${esc(t.tombol)}</a>`
           :`<a class="btn" aria-disabled="true" role="link" title="Link belum diisi">${esc(t.tombol)}</a>`}
 </div></li>`).join("");
+
+/* ====== TOMBOL SUB MENU ====== */
+function setLink(sel,url){
+  const a=$(sel);
+  if(url){a.href=url;a.target="_blank";a.rel="noopener"}
+  else{a.setAttribute("aria-disabled","true");a.title="Link belum diisi"}
+}
+setLink("#lnkIklan",LINK_BUAT_IKLAN);
+setLink("#lnkWwc",LINK_TEMPLATE_WAWANCARA);
+
+/* ====== HASIL TEST ONLINE (dari Google Sheets, sheet "hasil") ====== */
+let hasil=[];
+const norm=s=>String(s??"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+const KOLOM=[
+  {key:"nama",   cari:h=>h==="nama"||h.startsWith("nama")},
+  {key:"jabatan",cari:h=>h.includes("jabatan")},
+  {key:"pendidikan",cari:h=>h.includes("pendidikan")},
+  {key:"jurusan",cari:h=>h.includes("jurusan")},
+  {key:"buta",   cari:h=>h.includes("buta")},
+  {key:"nilai",  cari:h=>h.includes("nilai")&&h.includes("akhir")},
+  {key:"lulus",  cari:h=>h.includes("lulus")}
+];
+function cellVal(c){if(!c)return "";const v=c.f!=null?c.f:c.v;return v==null?"":String(v)}
+
+async function loadHasil(){
+  const ban=$("#bannerHasil");ban.hidden=false;ban.innerHTML="<b>Memuat data...</b>";
+  try{
+    let headers,data;
+    if(HASIL_API_URL){
+      /* lewat Google Apps Script (spreadsheet tetap privat) */
+      const r=await fetch(HASIL_API_URL+"?t="+Date.now());
+      const j=await r.json();
+      if(!j.ok)throw new Error(j.error||"gas");
+      const v=j.values||[j.headers].concat(j.rows.map(o=>j.headers.map(h=>o[h])));
+      headers=v[0].map(norm);
+      data=v.slice(1).map(r=>r.map(x=>String(x??"")));
+    }else{
+      /* langsung dari Google Sheets (harus dibagikan "siapa saja dengan link") */
+      const url=`https://docs.google.com/spreadsheets/d/${HASIL_SHEET_ID}/gviz/tq?tqx=out:json&gid=${HASIL_GID}&t=${Date.now()}`;
+      const r=await fetch(url);
+      const txt=await r.text();
+      const a=txt.indexOf("("),b=txt.lastIndexOf(")");
+      const j=JSON.parse(txt.slice(a+1,b));
+      if(j.status==="error")throw new Error("gviz");
+      headers=j.table.cols.map(c=>norm(c.label));
+      data=j.table.rows.map(rw=>(rw.c||[]).map(cellVal));
+    }
+    if(!headers.some(Boolean)||!headers.some(h=>h.includes("nama"))){
+      /* header ikut terbaca sebagai baris pertama */
+      const idx=data.findIndex(rw=>rw.some(x=>norm(x).includes("nama")));
+      if(idx>=0){headers=data[idx].map(norm);data=data.slice(idx+1)}
+    }
+    const peta={};
+    KOLOM.forEach(k=>{peta[k.key]=headers.findIndex(k.cari)});
+    /* Keterangan buta warna dipaksa ke kolom tertentu (default kolom O) */
+    if(HASIL_KOL_BUTA){
+      peta.buta=HASIL_KOL_BUTA.toUpperCase().split("").reduce((n,c)=>n*26+c.charCodeAt(0)-64,0)-1;
+    }
+    hasil=data.map(rw=>{
+      const o={};KOLOM.forEach(k=>{o[k.key]=peta[k.key]>=0?(rw[peta[k.key]]||""):""});return o;
+    }).filter(o=>o.nama.trim()!=="");
+    ban.hidden=true;
+  }catch(err){
+    hasil=[];
+    ban.innerHTML="<b>Hasil test belum bisa dimuat.</b> Pastikan spreadsheet dibagikan dengan akses \"Siapa saja yang memiliki link dapat melihat\", lalu klik Muat ulang.";
+  }
+  renderHasil();
+}
+function renderHasil(){
+  const q=$("#qh").value.trim().toLowerCase();
+  const list=hasil.filter(o=>!q||[o.nama,o.jabatan,o.pendidikan,o.jurusan,o.lulus].join(" ").toLowerCase().includes(q));
+  $("#tbHasil").innerHTML=list.map(o=>{
+    const l=norm(o.lulus);
+    const cls=!l?"":(l.includes("tidak")||l.includes("gagal")?"no":(l.includes("lulus")?"ok":""));
+    return `<tr><td><b>${esc(o.nama)}</b></td><td>${esc(o.jabatan)}</td><td>${esc(o.pendidikan)}</td><td>${esc(o.jurusan)}</td>
+      <td>${esc(o.buta)}</td><td class="num">${esc(o.nilai)}</td><td>${o.lulus?`<span class="tag ${cls}">${esc(o.lulus)}</span>`:""}</td></tr>`}).join("");
+  $("#emptyHasil").hidden=list.length>0;
+  $("#countHasil").textContent=list.length+" pelamar";
+}
+$("#qh").addEventListener("input",renderHasil);
+$("#btnRefreshHasil").addEventListener("click",loadHasil);
 
 load();
 </script>
