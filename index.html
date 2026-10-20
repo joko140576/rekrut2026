@@ -158,8 +158,31 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
 .tag.no{color:var(--danger);border-color:var(--danger)}
 #tblHasil{min-width:860px}
 
+/* SUB MENU: Alamat Test Online (barcode) */
+.qrcard{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center;padding:clamp(20px,3vw,30px)}
+.qrthumb{all:unset;box-sizing:border-box;cursor:zoom-in;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;display:block;position:relative;width:min(240px,100%)}
+.qrthumb:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
+.qrthumb:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.qrthumb img{display:block;width:100%;height:auto;image-rendering:pixelated}
+.qrthumb .zoom{position:absolute;right:8px;bottom:8px;width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.qrthumb .zoom svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qrcard .qtxt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.qrcard .qtxt h3{margin:0;font:700 20px/1.2 var(--f-display)}
+.qrcard .qtxt p{margin:0;color:var(--muted);max-width:56ch}
+.qrcard .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+.qrcard .btn{text-decoration:none;display:inline-block}
+.atau{display:flex;align-items:center;gap:14px;color:var(--muted);font:500 12px var(--f-mono);letter-spacing:.14em}
+.atau::before,.atau::after{content:"";flex:1;height:1px;background:var(--line)}
+#dlgQr{width:min(560px,calc(100% - 24px))}
+#dlgQr .qbox{padding:18px;display:flex;flex-direction:column;gap:14px}
+#dlgQr .qbig{background:#fff;border-radius:10px;padding:14px}
+#dlgQr .qbig img{display:block;width:100%;height:auto;image-rendering:pixelated}
+#dlgQr .qurl{margin:0;text-align:center;font:500 13px var(--f-mono);color:var(--muted);word-break:break-all}
+#dlgQr .actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+#dlgQr .btn{text-decoration:none;display:inline-block}
+
 @media (prefers-reduced-motion:no-preference){.pulse{animation:pl 3s ease-in-out infinite}@keyframes pl{50%{opacity:.35}}}
-@media (max-width:820px){.hero,.about,.detail{grid-template-columns:1fr}.hero svg{max-height:240px}}
+@media (max-width:820px){.hero,.about,.detail,.qrcard{grid-template-columns:1fr}.hero svg{max-height:240px}}
 .topbar{display:none}
 @media (max-width:820px){
   .app{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
@@ -185,6 +208,7 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
       <button data-view="alur"><svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="18" r="2"/><path d="M6.5 7.5l4 3.2M13.5 13.3l4 3.2"/></svg>Alur Rekrutmen</button>
       <div class="subnav" id="subnav" hidden>
         <button data-view="tpl"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg>Template Lowongan</button>
+        <button data-view="tes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Alamat Test Online</button>
         <button data-view="hasil"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>Hasil Test Online</button>
         <button data-view="wwc"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Template Wawancara</button>
       </div>
@@ -325,6 +349,37 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
       </div>
     </section>
 
+    <!-- SUB MENU: ALAMAT TEST ONLINE -->
+    <section class="view" id="v-tes">
+      <div class="head"><div><h2>Alamat Test Online</h2><p>Sub menu Alur Rekrutmen: alamat website dan barcode untuk mengerjakan test online.</p></div></div>
+      <div class="card detail one">
+        <div class="dtxt">
+          <div class="bigic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
+          <h3>Alamat test online</h3>
+          <p>Alamat test online adalah alamat website tempat pelamar mengerjakan tes secara online: <b class="urlbox" id="tesUrl">https://ssi-rekrut.vercel.app/soal.html</b>. Buka alamat tersebut di browser, atau gunakan opsi lain dengan memindai barcode di bawah.</p>
+          <div class="btns">
+            <a class="btn primary" href="https://ssi-rekrut.vercel.app/soal.html" target="_blank" rel="noopener">Buka test online</a>
+            <button class="btn" type="button" id="btnSalin">Salin alamat</button>
+          </div>
+        </div>
+      </div>
+      <div class="atau">ATAU OPSI LAIN</div>
+      <div class="card qrcard">
+        <button class="qrthumb" type="button" id="qrOpen" aria-label="Perbesar barcode test online">
+          <img id="qrThumb" alt="Barcode alamat test online" width="240" height="240">
+          <span class="zoom" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg></span>
+        </button>
+        <div class="qtxt">
+          <h3>Scan barcode</h3>
+          <p>Pindai barcode dengan kamera ponsel untuk langsung membuka halaman test online. Klik gambar barcode untuk memperbesar, lalu unduh jika perlu dicetak atau dibagikan.</p>
+          <div class="btns">
+            <button class="btn" type="button" id="qrOpen2">Perbesar barcode</button>
+            <a class="btn" id="qrDl1" download="barcode-test-online-ssi.png">Download barcode</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- SUB MENU: HASIL TEST ONLINE -->
     <section class="view" id="v-hasil">
       <div class="head">
@@ -443,6 +498,18 @@ dialog .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end}
   </form>
 </dialog>
 
+<!-- Barcode diperbesar -->
+<dialog id="dlgQr" aria-label="Barcode test online">
+  <div class="qbox">
+    <div class="qbig"><img id="qrBig" alt="Barcode alamat test online (diperbesar)"></div>
+    <p class="qurl">https://ssi-rekrut.vercel.app/soal.html</p>
+    <div class="actions">
+      <button type="button" class="btn" data-close>Tutup</button>
+      <a class="btn primary" id="qrDl2" download="barcode-test-online-ssi.png">Download</a>
+    </div>
+  </div>
+</dialog>
+
 <script>
 /* ====== PENGATURAN ======
    Tempel URL Web App Google Apps Script (lihat Code.gs) di bawah ini. */
@@ -452,6 +519,13 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyBR_qtQp2D5qvVBfVlO_Qs
    Isi dengan alamat tujuan (https://...). Kosong = tombol nonaktif. */
 const LINK_BUAT_IKLAN        = "";   // tombol "Buat gambar iklan lowongan"
 const LINK_TEMPLATE_WAWANCARA = "https://wawancara-ssi.vercel.app";  // tombol "Buka template wawancara"
+
+/* ====== ALAMAT TEST ONLINE ======
+   URL_TEST dan gambar barcode (QR) untuk sub menu "Alamat Test Online".
+   Untuk mengganti barcode, ganti nilai QR_SRC dengan nama file gambar
+   (mis. "barcode-test.png") atau data URI baru. */
+const URL_TEST = "https://ssi-rekrut.vercel.app/soal.html";
+const QR_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaQAAAGkAQAAAABWN2yYAAACU0lEQVR4nO2cW47DIAxF7x3NP+x/d91BWIHnw5hHOqN5NUporxVVlHIULFk2NlAafi/l7Q8QIEqUKFGiRIn6AVXYBIUASDLDG/sBp8xQ1GtQ5rIByUjaBrsRAJLtB5w0Q1EvQRU212dmzGDuznAacNYMRb0U5f7QzNvVCA96lyhRVd4/7SVgJdeQnO5LO9fXS9SaVLLqAwuR2joQtkVcbgPOmqGoZ6aqPxyjrxVWg2sucR6wgl6i1qLegTnyJmMytzoOnY94lyhRX4pXY2xDq9t4UK79Zt72/hh2fb1ErUUNdriF32uf/rjE+lB2KOpAKhkAu7EmJilylhC70evbp81Q1DNTU92GbffEn8hTrGQCSFu4x+vrJWpNqpA5PGGyaTMlwnSv4Sykl6g1qJ6etOd+rVjTE60PRR1F9QMMLWFpnT03GRJq2aGoA6iww1a0CWltoAblYeT19RK1FjXF5R6Ro2LTnWQa3eb19RK1FtX3Uwygb6YU+leXlkSj5DNmKOoVqPCH3h6CL4B9ETvJH4o6iJpOYu8WhIgMBeMyUnYo6vHU3bby3DabjkDEKvH6eolai5odnQ3WiN4Y+2WHoo6i5ut4vXKYjLkfhR184yJ6iVqNGleJ9ZJUrv3MPWHxzoX0ErUYNV7HK+1cTRW/zlx94//fJUrUT6hk1e8VtpMP9evD3yVKFPDJfb2Srdlb2hjXVfwMWPxwfb1ErUWFHQ4l62p7hShstkeAaYtB19dL1FrUtJ+CeUtld19A+8uiDqNo34+5E/3/oShRokSJEnUI9QFUFQ43cXPq0wAAAABJRU5ErkJggg==";
 
 /* Spreadsheet hasil test online (sheet "hasil", gid 1267186563).
    Spreadsheet harus dibagikan: "Siapa saja yang memiliki link bisa melihat". */
@@ -479,7 +553,7 @@ function hariDari(s){const d=new Date(s+"T00:00:00");return isNaN(d)?"":HARI[d.g
 function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 
 /* navigasi */
-const SUBVIEWS = ["alur","tpl","hasil","wwc"];
+const SUBVIEWS = ["alur","tpl","tes","hasil","wwc"];
 let hasilLoaded = false;
 $("#nav").addEventListener("click",e=>{
   const b=e.target.closest("button[data-view]");if(!b)return;
@@ -620,6 +694,27 @@ function setLink(sel,url){
 }
 setLink("#lnkIklan",LINK_BUAT_IKLAN);
 setLink("#lnkWwc",LINK_TEMPLATE_WAWANCARA);
+
+/* ====== ALAMAT TEST ONLINE: barcode, perbesar, download, salin ====== */
+$("#qrThumb").src=QR_SRC;
+$("#qrBig").src=QR_SRC;
+$("#qrDl1").href=QR_SRC;
+$("#qrDl2").href=QR_SRC;
+const bukaQr=()=>$("#dlgQr").showModal();
+$("#qrOpen").addEventListener("click",bukaQr);
+$("#qrOpen2").addEventListener("click",bukaQr);
+/* klik di luar kotak dialog (area gelap) menutup gambar */
+$("#dlgQr").addEventListener("click",e=>{if(e.target===e.currentTarget)e.currentTarget.close()});
+$("#btnSalin").addEventListener("click",async()=>{
+  const b=$("#btnSalin");
+  try{await navigator.clipboard.writeText(URL_TEST);b.textContent="Tersalin"}
+  catch(err){
+    const t=document.createElement("textarea");t.value=URL_TEST;document.body.appendChild(t);t.select();
+    try{document.execCommand("copy");b.textContent="Tersalin"}catch(e2){b.textContent="Gagal menyalin"}
+    t.remove();
+  }
+  setTimeout(()=>{b.textContent="Salin alamat"},2000);
+});
 
 /* ====== HASIL TEST ONLINE (dari Google Sheets, sheet "hasil") ====== */
 let hasil=[];
