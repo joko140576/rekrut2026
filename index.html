@@ -586,6 +586,7 @@ function render(){
 }
 $("#q").addEventListener("input",render);
 
+const JADWAL_CACHE_KEY="jadwal_cache_v1";
 async function load(){
   if(!API_URL){
     rows=SAMPLE;
@@ -593,14 +594,21 @@ async function load(){
     $("#banner").innerHTML="<b>Mode contoh.</b> Data di bawah hanya contoh. Isi <code>API_URL</code> di file index.html dengan URL Web App dari spreadsheet agar jadwal asli tampil.";
     return render();
   }
+  /* tampilkan data tersimpan di browser lebih dulu agar tabel langsung muncul */
+  if(!rows.length){
+    try{const c=JSON.parse(localStorage.getItem(JADWAL_CACHE_KEY)||"null");if(c&&Array.isArray(c.rows)&&c.rows.length){rows=c.rows;render()}}catch(e){}
+  }
   try{
     const r=await fetch(API_URL+"?t="+Date.now());
     const j=await r.json();
     if(!j.ok)throw new Error(j.error);
     rows=j.rows;$("#banner").hidden=true;
+    try{localStorage.setItem(JADWAL_CACHE_KEY,JSON.stringify({t:Date.now(),rows}))}catch(e){}
   }catch(e){
     $("#banner").hidden=false;
-    $("#banner").innerHTML="<b>Jadwal belum bisa dimuat.</b> Periksa koneksi dan pengaturan Web App (akses: Anyone).";
+    $("#banner").innerHTML=rows.length
+      ?"<b>Menampilkan jadwal tersimpan.</b> Pembaruan gagal, periksa koneksi lalu muat ulang halaman."
+      :"<b>Jadwal belum bisa dimuat.</b> Periksa koneksi dan pengaturan Web App (akses: Anyone).";
   }
   render();
 }
